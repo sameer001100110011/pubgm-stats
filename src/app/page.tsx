@@ -1,6 +1,7 @@
 import DogTag from "@/components/DogTag";
 import { FadeUp } from "@/components/AnimatedSection";
 import { GameBadge } from "@/components/GameBadge";
+import CountUp from "@/components/CountUp";
 
 const feed = [
   { time: "0:04 ago", text: "RUPPO_YT captured a Squad report — 6.2 K/D, M416 top weapon" },
@@ -72,6 +73,35 @@ export default function Home() {
                 </span>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Social proof — counting numbers give the "live, growing" pull */}
+      {/* ⚠️ TODO BEFORE LAUNCH: these are PLACEHOLDER numbers, not real data.
+          Do not deploy live with fake numbers — replace with real counts from
+          Supabase once you have actual captures, or remove this section
+          entirely until you do. Showing fabricated stats to real visitors is
+          misleading and will damage trust if noticed. */}
+      <section className="border-b border-[--color-border]">
+        <div className="mx-auto max-w-6xl px-6 py-10 grid grid-cols-3 gap-6 text-center">
+          <div>
+            <p className="font-display text-2xl sm:text-3xl text-[--color-brass]">
+              <CountUp end={12847} suffix="+" />
+            </p>
+            <p className="stencil-label text-[--color-text-dim] mt-1">Reports captured</p>
+          </div>
+          <div>
+            <p className="font-display text-2xl sm:text-3xl text-[--color-brass]">
+              <CountUp end={2103} suffix="+" />
+            </p>
+            <p className="stencil-label text-[--color-text-dim] mt-1">Squads compared</p>
+          </div>
+          <div>
+            <p className="font-display text-2xl sm:text-3xl text-[--color-brass]">
+              <CountUp end={97} suffix="%" />
+            </p>
+            <p className="stencil-label text-[--color-text-dim] mt-1">Capture accuracy</p>
           </div>
         </div>
       </section>
@@ -214,6 +244,39 @@ export default function Home() {
             </FadeUp>
           ))}
         </div>
+      </section>
+
+      {/* Streak mechanic — gamification hook, clearly marked roadmap */}
+      <section className="mx-auto max-w-6xl px-6 py-24">
+        <FadeUp>
+          <p className="stencil-label text-[--color-olive] mb-4">Roadmap · Not live yet</p>
+          <h2 className="font-display text-3xl text-[--color-text] mb-4 max-w-lg">
+            Capture streaks. Because one report is never enough.
+          </h2>
+          <p className="text-[--color-text-dim] max-w-md mb-10">
+            Capture after three matches in a row and Dropcard tracks your streak —
+            longer streaks unlock deeper trend charts, since more reports means more
+            signal in your data.
+          </p>
+        </FadeUp>
+        <FadeUp delay={0.1}>
+          <div className="flex flex-wrap gap-4">
+            {["Bronze · 3 reports", "Silver · 10 reports", "Gold · 25 reports"].map(
+              (s, i) => (
+                <div
+                  key={s}
+                  className={`rounded-xl border px-6 py-4 stencil-label ${
+                    i === 0
+                      ? "border-[--color-brass]/60 text-[--color-brass]"
+                      : "border-[--color-border] text-[--color-text-dim]"
+                  }`}
+                >
+                  {s}
+                </div>
+              )
+            )}
+          </div>
+        </FadeUp>
       </section>
 
       {/* Pricing — reflects the free/paid tier plan */}
