@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+:root {
+  /* Tactical briefing palette — grounded in battle royale UI/dog-tag material world */
+  --color-bg: #12140f;          /* near-black olive, not pure black */
+  --color-panel: #1b1e17;       /* card/panel surface */
+  --color-panel-raised: #22261d;
+  --color-border: #33382a;
+  --color-text: #ede9dc;        /* bone/paper */
+  --color-text-dim: #9a9c8c;
+  --color-brass: #c9a227;       /* dog-tag brass — primary accent */
+  --color-olive: #7a8b5c;       /* olive drab — secondary accent */
+  --color-rust: #b4432d;        /* muted rust — losses/danger, used sparingly */
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-data: var(--font-data);
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-panel: var(--color-panel);
+  --color-panel-raised: var(--color-panel-raised);
+  --color-border: var(--color-border);
+  --color-text: var(--color-text);
+  --color-text-dim: var(--color-text-dim);
+  --color-brass: var(--color-brass);
+  --color-olive: var(--color-olive);
+  --color-rust: var(--color-rust);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-data: var(--font-data);
+}
+
+body {
+  font-family: var(--font-body), sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), sans-serif;
+  letter-spacing: 0.01em;
+}
+
+.font-data {
+  font-family: var(--font-data), monospace;
+}
+
+/* Stenciled label style — used for eyebrows / structural markers, evokes crate/dog-tag stamping */
+.stencil-label {
+  font-family: var(--font-display), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
