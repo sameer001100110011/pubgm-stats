@@ -60,3 +60,54 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Tactical HUD texture layer — subtle grid + grain, gives depth instead of flat panels */
+.tac-grid {
+  background-image:
+    linear-gradient(rgba(201, 162, 39, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 162, 39, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.tac-glow {
+  box-shadow: 0 0 60px -15px rgba(201, 162, 39, 0.35);
+}
+
+.tac-noise {
+  position: relative;
+}
+.tac-noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+.tac-scan::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to bottom, transparent, rgba(201, 162, 39, 0.06), transparent);
+  animation: scan 6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.tac-ticker {
+  animation: ticker 22s linear infinite;
+}
+.tac-ticker:hover {
+  animation-play-state: paused;
+}

@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     "Turn your PUBG Mobile career stats into a shareable after-action report. Weapon breakdowns, K/D, and squad comparisons — no login, no risk to your account.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
