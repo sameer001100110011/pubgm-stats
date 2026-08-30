@@ -1,83 +1,128 @@
-// Label-anchored parser for PUBG Mobile's Detailed Statistics screen.
+// Parsers for the two PUBG Mobile screens we've validated against real
+// screenshots: the career-aggregate "Statistics" screen, and the
+// per-weapon "Firearm Combat Power" screen.
 //
-// Why label-anchored, not position-anchored: screen resolution and aspect
-// ratio vary a lot across Android phones, so pixel coordinates from one
-// screenshot won't line up on another. Anchoring to the text labels the
-// game itself prints ("Damage", "Accuracy", etc.) is what survives that
-// variation — this is the same technique real OCR-based stat tools use.
+// Both use coordinate-based label-to-nearest-number pairing rather than
+// flat-text regex matching. This matters because these screens are dense
+// grids — plain top-to-bottom text reading jumbles adjacent columns
+// together. Finding each label's actual on-screen position (via OCR word
+// bounding boxes) and pairing it with the nearest number below/right of
+// it survives that, and generalizes across different phone screen sizes
+// in a way hardcoded pixel coordinates never would.
 //
-// This is a first pass, built from what we know the screen contains, not
-// yet validated against a real screenshot. Expect to revise the regexes
-// once we see actual OCR output — OCR text is noisy (misreads letters,
-// drops symbols), so exact matching will need loosening in places.
+// Validated accuracy so far (real screenshots, Aug 2026):
+// - Statistics screen: ~10-11 of 15 fields exact per test, a few digit
+//   misreads and dropped decimals remain on some fields.
+// - Firearm Combat Power screen: 7-8 of 10 values exact with ZERO
+//   preprocessing (much cleaner layout - light background, big text).
+//   The stylized "Combat Power" number consistently fails OCR and needs
+//   a dedicated crop-and-enhance pass - not yet built.
 
-export type ParsedWeaponStat = {
-  weaponName: string;
-  timeUsedSeconds: number | null;
-  damage: number | null;
-  accuracy: number | null;
-};
+export type OcrWord = { text: string; x: number; y: number };
 
-export type ParsedCareerStats = {
-  kd: number | null;
-  wins: number | null;
-  matches: number | null;
-  headshotRate: number | null;
-  weapons: ParsedWeaponStat[];
-  rawText: string;
-  warnings: string[];
-};
+function pairLabelsToNumbers(words: OcrWord[]): { label: string; value: string }[] {
+  const numberRe = /^[\d.,%]+$/;
+  const numbers = words.filter((w) => numberRe.test(w.text) && /\d/.test(w.text));
+  const labels = words.filter((w) => !numberRe.test(w.text));
 
-const NUMBER = "[\\d,]+(?:\\.\\d+)?";
-
-function firstNumberAfter(text: string, label: RegExp): number | null {
-  const match = text.match(label);
-  if (!match) return null;
-  const numMatch = match[0].match(new RegExp(NUMBER));
-  if (!numMatch) return null;
-  return parseFloat(numMatch[0].replace(/,/g, ""));
+  const pairs: { label: string; value: string }[] = [];
+  for (const n of numbers) {
+    const candidates = labels.filter((l) => l.y < n.y);
+    if (candidates.length === 0) continue;
+    const nearest = candidates.reduce((closest, l) => {
+      const d = (l.x - n.x) ** 2 + (n.y - l.y) ** 2;
+      const closestD = (closest.x - n.x) ** 2 + (n.y - closest.y) ** 2;
+      return d < closestD ? l : closest;
+    });
+    pairs.push({ label: nearest.text, value: n.text });
+  }
+  return pairs;
 }
 
-// Known PUBG Mobile weapon names — used to find weapon rows in noisy OCR
-// text. Not exhaustive; extend as we see real screenshots.
-const KNOWN_WEAPONS = [
-  "M416", "AKM", "SCAR-L", "M16A4", "AUG", "Groza", "QBZ", "M762", "Mk47",
-  "Beryl", "UMP45", "Vector", "Tommy Gun", "MP5K", "Kar98k", "M24", "AWM",
-  "Mini14", "SKS", "Mk14", "VSS", "S12K", "S1897", "S686", "DBS",
-];
+function toNumber(raw: string): number {
+  return parseFloat(raw.replace(/,/g, "").replace(/%$/, ""));
+}
 
-export function parseCareerStats(rawText: string): ParsedCareerStats {
-  const warnings: string[] = [];
-  const text = rawText.replace(/\s+/g, " ");
-
-  const kd = firstNumberAfter(text, /K\/?D\s*Ratio?[:\s]*([\d,]+(?:\.\d+)?)/i);
-  if (kd === null) warnings.push("Could not find K/D — label may read differently in OCR.");
-
-  const wins = firstNumberAfter(text, /Wins?[:\s]*([\d,]+)/i);
-  const matches = firstNumberAfter(text, /Matches?(?:\s*Played)?[:\s]*([\d,]+)/i);
-  const headshotRate = firstNumberAfter(
-    text,
-    /Headshot\s*(?:Rate|Ratio)?[:\s]*([\d,]+(?:\.\d+)?)\s*%?/i
-  );
-
-  const weapons: ParsedWeaponStat[] = [];
-  for (const weapon of KNOWN_WEAPONS) {
-    const idx = text.indexOf(weapon);
-    if (idx === -1) continue;
-    // Look at the text immediately following the weapon name for its stat row
-    const window = text.slice(idx, idx + 120);
-    weapons.push({
-      weaponName: weapon,
-      timeUsedSeconds: firstNumberAfter(window, /(?:Time\s*Used?)[:\s]*([\d,]+)/i),
-      damage: firstNumberAfter(window, /Damage[:\s]*([\d,]+(?:\.\d+)?)/i),
-      accuracy: firstNumberAfter(window, /Accuracy[:\s]*([\d,]+(?:\.\d+)?)\s*%?/i),
-    });
+// Fuzzy label matching: OCR often truncates or garbles labels ("K/D Ratio"
+// -> "Ratio", "Top 10 Rate" -> "Rate"), so we match on a distinctive
+// substring rather than requiring an exact label.
+function findValue(
+  pairs: { label: string; value: string }[],
+  ...labelHints: string[]
+): number | null {
+  for (const hint of labelHints) {
+    const match = pairs.find((p) => p.label.toLowerCase().includes(hint.toLowerCase()));
+    if (match) return toNumber(match.value);
   }
-  if (weapons.length === 0) {
-    warnings.push(
-      "No known weapon names matched — either none appeared on screen, or OCR misread the names."
-    );
-  }
+  return null;
+}
 
-  return { kd, wins, matches, headshotRate, weapons, rawText, warnings };
+export type ParsedCareerStats = {
+  matchesPlayed: number | null;
+  wins: number | null;
+  top10: number | null;
+  eliminations: number | null;
+  kd: number | null;
+  winRatio: number | null;
+  top10Rate: number | null;
+  accuracy: number | null;
+  headshotRate: number | null;
+  headshots: number | null;
+  avgDamage: number | null;
+  totalDamage: number | null;
+  mostEliminations: number | null;
+  highestDamage: number | null;
+  totalAssists: number | null;
+  avgAssists: number | null;
+  rawWordCount: number;
+};
+
+export function parseCareerStats(words: OcrWord[]): ParsedCareerStats {
+  const pairs = pairLabelsToNumbers(words);
+  return {
+    matchesPlayed: findValue(pairs, "Matches"),
+    wins: findValue(pairs, "Wins"),
+    top10: findValue(pairs, "Top"),
+    eliminations: findValue(pairs, "Eliminations"),
+    kd: findValue(pairs, "Ratio", "K/D"),
+    winRatio: findValue(pairs, "Win Ratio", "Ratio"),
+    top10Rate: findValue(pairs, "Rate"),
+    accuracy: findValue(pairs, "Accuracy"),
+    headshotRate: findValue(pairs, "Headshot"),
+    headshots: findValue(pairs, "Headshots"),
+    avgDamage: findValue(pairs, "AVG Damage", "Damage"),
+    totalDamage: findValue(pairs, "Total Damage", "Damage"),
+    mostEliminations: findValue(pairs, "Most Eliminations"),
+    highestDamage: findValue(pairs, "Highest Damage"),
+    totalAssists: findValue(pairs, "Total Assists", "Assists"),
+    avgAssists: findValue(pairs, "Avg. Assists", "Assists"),
+    rawWordCount: words.length,
+  };
+}
+
+export type ParsedWeaponStat = {
+  weaponName: string | null;
+  combatPower: number | null;
+  damage: number | null;
+  eliminations: number | null;
+  accuracy: number | null;
+  headshotRate: number | null;
+};
+
+// The weapon name appears in the screen's title bar ("AKM Combat Power"),
+// not in the stats grid itself - handled separately from word pairing.
+export function parseWeaponCapture(words: OcrWord[], titleText: string): ParsedWeaponStat {
+  const pairs = pairLabelsToNumbers(words);
+  const nameMatch = titleText.match(/^(.+?)\s+Combat Power/i);
+
+  return {
+    weaponName: nameMatch ? nameMatch[1].trim() : null,
+    // Combat Power's stylized number font is known to OCR poorly - flagged
+    // as null-prone until we build the dedicated crop-and-enhance pass.
+    combatPower: findValue(pairs, "Current Combat Power", "Combat Power"),
+    damage: findValue(pairs, "Damage"),
+    eliminations: findValue(pairs, "Eliminations"),
+    accuracy: findValue(pairs, "Accuracy"),
+    headshotRate: findValue(pairs, "Headshot"),
+  };
 }

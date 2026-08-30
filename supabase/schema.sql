@@ -26,15 +26,27 @@ create table if not exists stat_captures (
   captured_at timestamptz not null default now()
 );
 
--- Weapon-level breakdown belongs to one capture, one row per weapon
+create index if not exists idx_captures_player on stat_captures(player_id);
+
+-- Weapon-level breakdown, from the Firearm Combat Power screen (one screen
+-- per weapon in-game, so these are captured independently over time, not
+-- nested under a single stat_captures row - a player might capture 3 weapons
+-- today and 4 more next week).
 create table if not exists weapon_stats (
   id uuid primary key default gen_random_uuid(),
-  capture_id uuid not null references stat_captures(id) on delete cascade,
+  player_id uuid not null references players(id) on delete cascade,
+  game text not null,
   weapon_name text not null,
-  time_used_seconds integer,
+  combat_power integer,
   damage numeric,
-  accuracy numeric
+  eliminations integer,
+  accuracy numeric,
+  headshot_rate numeric,
+  raw_ocr_text text,
+  captured_at timestamptz not null default now(),
+  -- a player can recapture the same weapon later to update it, but we keep
+  -- history rather than overwrite, so trend-over-time stays possible
+  unique (player_id, weapon_name, captured_at)
 );
 
-create index if not exists idx_captures_player on stat_captures(player_id);
-create index if not exists idx_weapon_stats_capture on weapon_stats(capture_id);
+create index if not exists idx_weapon_stats_player on weapon_stats(player_id);

@@ -120,7 +120,7 @@ export default function Home() {
             <Step
               n="01"
               title="Open your stats"
-              body="In PUBG Mobile: Profile → Career → Detailed Statistics. This is the screen with your weapon breakdown."
+              body="In PUBG Mobile: Profile → Career → Detailed Statistics for your career numbers, or Data → Honor → Firearm Combat Power for weapon-by-weapon stats."
             />
           </FadeUp>
           <FadeUp delay={0.15}>
@@ -151,7 +151,7 @@ export default function Home() {
           </FadeUp>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { t: "Weapon breakdown", d: "Time used, damage dealt, and accuracy per weapon — see what's actually carrying your matches." },
+              { t: "Weapon breakdown", d: "Damage, eliminations, accuracy and headshot rate per weapon — pulled from PUBG Mobile's own Firearm Combat Power screen, one weapon at a time." },
               { t: "K/D & win rate", d: "Career and per-mode numbers, tracked over every report you capture." },
               { t: "Headshot & accuracy", d: "Precision stats pulled straight from your Detailed Statistics screen." },
               { t: "Match history", d: "Recent placements at a glance, building a timeline as you capture more reports." },
