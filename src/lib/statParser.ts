@@ -46,13 +46,23 @@ function toNumber(raw: string): number {
 // Fuzzy label matching: OCR often truncates or garbles labels ("K/D Ratio"
 // -> "Ratio", "Top 10 Rate" -> "Rate"), so we match on a distinctive
 // substring rather than requiring an exact label.
+//
+// IMPORTANT: this screen has several labels that share a word ("K/D Ratio"
+// and "Win Ratio" both contain "Ratio"; "Total Damage" and "AVG Damage"
+// both contain "Damage"). A matched pair is removed from the pool once
+// used, so two different fields can never both grab the same number - a
+// real bug caught by actually running this against real OCR output rather
+// than eyeballing results by hand.
 function findValue(
   pairs: { label: string; value: string }[],
   ...labelHints: string[]
 ): number | null {
   for (const hint of labelHints) {
-    const match = pairs.find((p) => p.label.toLowerCase().includes(hint.toLowerCase()));
-    if (match) return toNumber(match.value);
+    const idx = pairs.findIndex((p) => p.label.toLowerCase().includes(hint.toLowerCase()));
+    if (idx !== -1) {
+      const [match] = pairs.splice(idx, 1);
+      return toNumber(match.value);
+    }
   }
   return null;
 }
@@ -79,22 +89,27 @@ export type ParsedCareerStats = {
 
 export function parseCareerStats(words: OcrWord[]): ParsedCareerStats {
   const pairs = pairLabelsToNumbers(words);
+  // Order matters: fields are extracted in the same top-to-bottom order
+  // they appear on screen, so that ambiguous shared-word labels ("Ratio"
+  // appears in both "K/D Ratio" and "Win Ratio"; "Damage" in both "Total
+  // Damage" and "AVG Damage") consume the correct pair first, before a
+  // later field with the same fallback hint claims whatever's left.
   return {
     matchesPlayed: findValue(pairs, "Matches"),
     wins: findValue(pairs, "Wins"),
-    top10: findValue(pairs, "Top"),
+    top10: findValue(pairs, "Top 10", "Top"),
     eliminations: findValue(pairs, "Eliminations"),
-    kd: findValue(pairs, "Ratio", "K/D"),
+    kd: findValue(pairs, "K/D", "K/O", "Ratio"), // row 1 - matched before Win Ratio below
     winRatio: findValue(pairs, "Win Ratio", "Ratio"),
-    top10Rate: findValue(pairs, "Rate"),
+    top10Rate: findValue(pairs, "10 Rate", "Rate"),
     accuracy: findValue(pairs, "Accuracy"),
-    headshotRate: findValue(pairs, "Headshot"),
+    headshotRate: findValue(pairs, "Headshot Rate", "Headshot"),
     headshots: findValue(pairs, "Headshots"),
-    avgDamage: findValue(pairs, "AVG Damage", "Damage"),
+    avgDamage: findValue(pairs, "AVG Damage", "Damage"), // row 3 - before Total Damage below
     totalDamage: findValue(pairs, "Total Damage", "Damage"),
-    mostEliminations: findValue(pairs, "Most Eliminations"),
-    highestDamage: findValue(pairs, "Highest Damage"),
-    totalAssists: findValue(pairs, "Total Assists", "Assists"),
+    mostEliminations: findValue(pairs, "Most Elimination", "Eliminati"),
+    highestDamage: findValue(pairs, "Highest Damage", "Damage"),
+    totalAssists: findValue(pairs, "Total Assists", "Assists"), // before Avg Assists below
     avgAssists: findValue(pairs, "Avg. Assists", "Assists"),
     rawWordCount: words.length,
   };
