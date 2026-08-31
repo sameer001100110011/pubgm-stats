@@ -246,17 +246,20 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Streak mechanic — gamification hook, clearly marked roadmap */}
+      {/* Streak mechanic — now real, tracked from actual capture timestamps */}
       <section className="mx-auto max-w-6xl px-6 py-24">
         <FadeUp>
-          <p className="stencil-label text-[--color-olive] mb-4">Roadmap · Not live yet</p>
+          <p className="stencil-label text-[--color-olive] mb-4">Live</p>
           <h2 className="font-display text-3xl text-[--color-text] mb-4 max-w-lg">
             Capture streaks. Because one report is never enough.
           </h2>
           <p className="text-[--color-text-dim] max-w-md mb-10">
-            Capture after three matches in a row and Dropcard tracks your streak —
-            longer streaks unlock deeper trend charts, since more reports means more
-            signal in your data.
+            Capture on consecutive days and Dropcard tracks your streak, saved on your
+            device — check{" "}
+            <a href="/trends" className="text-[--color-brass] underline">
+              your trends page
+            </a>{" "}
+            to see it.
           </p>
         </FadeUp>
         <FadeUp delay={0.1}>
@@ -295,8 +298,8 @@ export default function Home() {
                 <p className="font-display text-3xl text-[--color-text] mt-2">Free</p>
                 <ul className="mt-6 space-y-2 text-sm text-[--color-text-dim]">
                   <li>▸ Unlimited stat captures</li>
-                  <li>▸ Full weapon breakdown per report</li>
-                  <li>▸ Squad comparison</li>
+                  <li>▸ Per-weapon breakdown, one weapon at a time</li>
+                  <li>▸ Capture streaks & basic insights</li>
                 </ul>
               </div>
             </FadeUp>
@@ -305,9 +308,9 @@ export default function Home() {
                 <p className="stencil-label text-[--color-brass]">Command</p>
                 <p className="font-display text-3xl text-[--color-text] mt-2">Coming soon</p>
                 <ul className="mt-6 space-y-2 text-sm text-[--color-text-dim]">
-                  <li>▸ Historical trend charts across seasons</li>
-                  <li>▸ Coaching-style recommendations</li>
-                  <li>▸ Priority capture processing</li>
+                  <li>▸ Cross-device sync for your capture history</li>
+                  <li>▸ Squad comparison with real captured data</li>
+                  <li>▸ Season-over-season trend charts</li>
                 </ul>
               </div>
             </FadeUp>

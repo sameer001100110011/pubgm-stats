@@ -9,6 +9,7 @@ import {
   type ParsedCareerStats,
   type ParsedWeaponStat,
 } from "@/lib/statParser";
+import { preprocessImage } from "@/lib/imagePreprocess";
 
 // Internal testing tool — NOT part of the public product. Upload a real
 // screenshot (Statistics screen or a Firearm Combat Power weapon screen)
@@ -34,11 +35,17 @@ export default function TestCapturePage() {
     setWeapon(null);
     setRawText("");
     setStatus("Loading OCR engine…");
-
     const worker: Worker = await createWorker("eng");
 
+    // Preprocessing (upscale + contrast) measurably fixed dropped decimals
+    // on the Statistics screen in real testing - not yet validated on the
+    // weapon screen, which was already clean without it, so we only apply
+    // it in career mode for now.
+    const ocrInput: Blob | File =
+      mode === "career" ? await preprocessImage(file, { scale: 3, contrast: 1.8 }) : file;
+
     setStatus("Reading image…");
-    const { data } = await worker.recognize(file, {}, { blocks: true });
+    const { data } = await worker.recognize(ocrInput, {}, { blocks: true });
     await worker.terminate();
 
     // Flatten tesseract.js's block/paragraph/line/word tree into flat
